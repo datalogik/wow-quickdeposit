@@ -1,0 +1,8 @@
+## Interface: 120001
+## Title: QuickDeposit
+## Notes: Quick deposit buttons for Guild Bank and Warband Bank
+## Author: datalogik
+## Version: 1.0.0
+## SavedVariables: QuickDepositDB
+
+QuickDeposit.lua
