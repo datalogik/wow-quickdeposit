@@ -1,8 +1,5 @@
 local addonName, addon = ...
 
--- Immediate load message
-print("=== QuickDeposit file loaded ===")
-
 QD_ButtonPanel = nil
 
 -- Button configuration
@@ -256,32 +253,9 @@ eventFrame:RegisterEvent("ACCOUNT_MONEY")
 
 eventFrame:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
-        print("|cFF00FF00[QuickDeposit]|r Addon loaded event fired!")
-
-        -- Don't hook yet, wait for bank to open
         self:UnregisterEvent("ADDON_LOADED")
 
     elseif event == "BANKFRAME_OPENED" then
-        print("|cFF00FF00[QuickDeposit]|r Bank opened event fired!")
-        print("|cFF00FF00[QuickDeposit]|r Searching for bank frames...")
-
-        -- List all Bank-related frames
-        local bankFrames = {}
-        for name, obj in pairs(_G) do
-            if type(obj) == "table" and type(name) == "string" and name:match("Bank") then
-                if type(obj.GetObjectType) == "function" then
-                    local objType = obj:GetObjectType()
-                    if objType == "Frame" or objType == "Button" then
-                        table.insert(bankFrames, name)
-                        print("  Found:", name)
-                    end
-                end
-            end
-        end
-
-        print("|cFF00FF00[QuickDeposit]|r Found " .. #bankFrames .. " bank-related frames")
-
-        -- Try specific frame names
         local possibleFrames = {
             "AccountBankPanel",
             "BankFrameAccountBankPanel",
@@ -292,48 +266,34 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1)
         local targetFrame = nil
         for _, frameName in ipairs(possibleFrames) do
             if _G[frameName] then
-                print("|cFF00FF00[QuickDeposit]|r Trying frame:", frameName)
                 targetFrame = _G[frameName]
                 break
             end
         end
 
-        if targetFrame then
-            print("|cFF00FF00[QuickDeposit]|r Using frame for hooks")
+        if targetFrame and not targetFrame.qdHooked then
+            targetFrame.qdHooked = true
 
-            if not targetFrame.qdHooked then
-                targetFrame.qdHooked = true
-
-                targetFrame:HookScript("OnShow", function()
-                    print("|cFF00FF00[QuickDeposit]|r OnShow fired!")
-                    QD_CreateButtonPanel()
-                    QD_UpdateButtonStates()
-                    QD_ButtonPanel:Show()
-                end)
-
-                targetFrame:HookScript("OnHide", function()
-                    print("|cFF00FF00[QuickDeposit]|r OnHide fired!")
-                    if QD_ButtonPanel then
-                        QD_ButtonPanel:Hide()
-                    end
-                end)
-
-                print("|cFF00FF00QuickDeposit|r Hooked! Buttons will appear when you switch to warband bank tab.")
-            end
-
-            -- If already shown, create panel now
-            if targetFrame:IsShown() then
-                print("|cFF00FF00[QuickDeposit]|r Frame already shown, creating panel...")
+            targetFrame:HookScript("OnShow", function()
                 QD_CreateButtonPanel()
                 QD_UpdateButtonStates()
                 QD_ButtonPanel:Show()
-            end
-        else
-            print("|cFFFF0000QuickDeposit|r ERROR: No suitable bank frame found!")
+            end)
+
+            targetFrame:HookScript("OnHide", function()
+                if QD_ButtonPanel then
+                    QD_ButtonPanel:Hide()
+                end
+            end)
+        end
+
+        if targetFrame and targetFrame:IsShown() then
+            QD_CreateButtonPanel()
+            QD_UpdateButtonStates()
+            QD_ButtonPanel:Show()
         end
 
     elseif event == "PLAYER_MONEY" or event == "ACCOUNT_MONEY" then
-        -- Money changed, update button states
         QD_UpdateButtonStates()
     end
 end)
